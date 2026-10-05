@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Platform } from "react-native";
+import { Animated } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { getFocusedRouteNameFromRoute, RouteProp } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,9 +7,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import { DashboardScreen } from "../screens/DashboardScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
+import { DailyUpdateScreen } from "../screens/DailyUpdateScreen";
+import { ReviewsScreen } from "../screens/ReviewsScreen";
+import { TeamScreen } from "../screens/TeamScreen";
 import { EmployeesStack } from "./EmployeesStack";
 import { DepartmentsStack } from "./DepartmentsStack";
 import { TeamsStack } from "./TeamsStack";
+import { TasksStack } from "./TasksStack";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { useExitConfirmation } from "../hooks/useExitConfirmation";
 import { useReducedMotion } from "../theme/animation";
@@ -26,15 +30,19 @@ const ICONS: Record<string, IconName> = {
   Employees: "people",
   Departments: "business",
   Teams: "git-network",
+  Tasks: "checkbox",
+  Update: "document-text",
+  Reviews: "shield-checkmark",
+  Team: "people-circle",
   Profile: "person-circle",
 };
 
-// Routes inside each nested stack where the tab bar should hide, so pushed
-// "Add" screens feel like a focused sub-flow rather than just another tab.
+// Pushed "Add" screens hide the tab bar so they read as a focused sub-flow.
 const HIDE_TAB_BAR_ON: Record<string, string> = {
   Employees: "AddEmployee",
   Departments: "AddDepartment",
   Teams: "AddTeam",
+  Tasks: "AddTask",
 };
 
 function AnimatedTabIcon({ name, color, size, focused }: { name: IconName; color: string; size: number; focused: boolean }) {
@@ -55,7 +63,9 @@ function AnimatedTabIcon({ name, color, size, focused }: { name: IconName; color
 
 export function AppTabs() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+  const role = user?.role ?? "EMPLOYEE";
+  const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
+  const isManager = role === "MANAGER";
   const exit = useExitConfirmation();
   const insets = useSafeAreaInsets();
 
@@ -71,8 +81,7 @@ export function AppTabs() {
   function tabBarStyleFor(tabName: keyof typeof HIDE_TAB_BAR_ON) {
     return ({ route }: { route: RouteProp<any> }) => {
       const focusedRoute = getFocusedRouteNameFromRoute(route);
-      const hidden = focusedRoute === HIDE_TAB_BAR_ON[tabName];
-      return hidden ? { display: "none" as const } : baseTabBarStyle;
+      return focusedRoute === HIDE_TAB_BAR_ON[tabName] ? { display: "none" as const } : baseTabBarStyle;
     };
   }
 
@@ -84,7 +93,7 @@ export function AppTabs() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedTabIcon name={ICONS[route.name]} color={color} size={size} focused={focused} />
+            <AnimatedTabIcon name={ICONS[route.name] ?? "ellipse"} color={color} size={size} focused={focused} />
           ),
           tabBarStyle: baseTabBarStyle,
           tabBarLabelStyle: {
@@ -97,19 +106,22 @@ export function AppTabs() {
         })}
       >
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
-        {isAdmin && (
-          <Tab.Screen name="Employees" component={EmployeesStack} options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Employees")({ route }) })} />
-        )}
-        {isAdmin && (
+
+        {isAdmin && <Tab.Screen name="Employees" component={EmployeesStack} options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Employees")({ route }) })} />}
+        {isAdmin && <Tab.Screen name="Departments" component={DepartmentsStack} options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Departments")({ route }) })} />}
+        {isAdmin && <Tab.Screen name="Teams" component={TeamsStack} options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Teams")({ route }) })} />}
+
+        {isManager && <Tab.Screen name="Team" component={TeamScreen} />}
+        {(isManager || role === "EMPLOYEE") && (
           <Tab.Screen
-            name="Departments"
-            component={DepartmentsStack}
-            options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Departments")({ route }) })}
+            name="Tasks"
+            component={TasksStack}
+            options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Tasks")({ route }) })}
           />
         )}
-        {isAdmin && (
-          <Tab.Screen name="Teams" component={TeamsStack} options={({ route }) => ({ tabBarStyle: tabBarStyleFor("Teams")({ route }) })} />
-        )}
+        {role === "EMPLOYEE" && <Tab.Screen name="Update" component={DailyUpdateScreen} options={{ title: "Daily" }} />}
+        {isManager && <Tab.Screen name="Reviews" component={ReviewsScreen} />}
+
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
       <ConfirmationDialog

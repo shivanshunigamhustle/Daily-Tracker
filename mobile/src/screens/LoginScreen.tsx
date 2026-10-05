@@ -7,12 +7,13 @@ import {
   Text,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Screen } from "../components/Screen";
 import { colors } from "../theme/colors";
-import { spacing } from "../theme/spacing";
+import { shadow, spacing } from "../theme/spacing";
 import { fontFamily } from "../theme/typography";
 import { duration, useReducedMotion } from "../theme/animation";
 import { getErrorMessage } from "../utils/errorMessage";
@@ -88,6 +89,9 @@ export function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <Animated.View style={[styles.content, { opacity, transform: [{ translateY }] }]}>
+        <View style={styles.logo}>
+          <Ionicons name="checkmark-done" size={30} color={colors.white} />
+        </View>
         <Text style={styles.title}>Team Daily Tracker</Text>
         <Text style={styles.subtitle}>Sign in to continue</Text>
 
@@ -131,6 +135,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
+  },
+  logo: {
+    alignSelf: "center",
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+    ...shadow.elevation2,
   },
   title: {
     fontFamily: fontFamily.bold,

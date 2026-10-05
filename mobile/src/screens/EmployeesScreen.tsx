@@ -7,6 +7,8 @@ import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
+import { Avatar } from "../components/Avatar";
+import { StatusChip } from "../components/Chip";
 import { Screen } from "../components/Screen";
 import { ScreenHeader } from "../components/ScreenHeader";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
@@ -106,13 +108,18 @@ export function EmployeesScreen() {
         renderItem={({ item, index }) => (
           <AnimatedEntrance index={index}>
             <Card style={styles.row}>
+              <Avatar name={item.fullName} />
               <View style={styles.rowContent}>
                 <Text style={styles.rowTitle}>{item.fullName}</Text>
                 <Text style={styles.rowSubtitle}>
-                  {item.employeeCode} · {item.user.role.name.replace(/_/g, " ")}
+                  {item.employeeCode}
                   {item.department ? ` · ${item.department.name}` : ""}
                   {item.team ? ` / ${item.team.name}` : ""}
                 </Text>
+                <View style={styles.chipLine}>
+                  <StatusChip status={item.user.role.name} />
+                  <StatusChip status={item.employmentStatus} />
+                </View>
               </View>
               <PressableScale
                 onPress={() => setPendingDelete(item)}
@@ -153,6 +160,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     flexDirection: "row",
     alignItems: "center",
+    gap: spacing.md,
+  },
+  chipLine: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
   rowContent: {
     flex: 1,

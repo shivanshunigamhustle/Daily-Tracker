@@ -56,27 +56,71 @@ export interface Employee {
   manager: { id: string; fullName: string } | null;
 }
 
+export type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "BLOCKED" | "COMPLETED" | "CANCELLED";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type DailyUpdateStatus = "SUBMITTED" | "NEEDS_CHANGES" | "APPROVED";
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  completion: number;
+  dueDate: string | null;
+  assignee: { id: string; fullName: string };
+  assignedBy: { id: string; fullName: string } | null;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  checkInAt: string;
+  checkOutAt: string | null;
+  workMode: WorkMode;
+}
+
+export interface DailyUpdate {
+  id: string;
+  employeeId: string;
+  summary: string;
+  blockers: string | null;
+  tomorrowPlan: string | null;
+  status: DailyUpdateStatus;
+  reviewComment: string | null;
+  employee?: { id: string; fullName: string; designation: string | null };
+}
+
+export interface TeamAttendanceRow {
+  employeeId: string;
+  fullName: string;
+  designation: string | null;
+  teamName: string | null;
+  attendance: AttendanceRecord | null;
+}
+
 export interface EmployeeDashboard {
   role: "EMPLOYEE";
-  employee: Employee | null;
+  employee: { fullName: string; designation: string | null } | null;
   today: {
-    workStatus: string;
+    workStatus: "NOT_STARTED" | "WORKING" | "ENDED";
     loginTime: string | null;
     workingTime: string | null;
-    dailyUpdateStatus: string;
+    dailyUpdateStatus: DailyUpdateStatus | "NOT_SUBMITTED";
   };
-  tasks: { total: number; completed: number; inProgress: number };
+  tasks: { total: number; completed: number; inProgress: number; notStarted: number; blocked: number };
 }
 
 export interface ManagerDashboard {
   role: "MANAGER";
-  employee: Employee | null;
-  team: { totalEmployees: number; present: number; absent: number; onLeave: number; updatesPending: number };
+  team: { totalEmployees: number; present: number; absent: number; updatesPending: number };
+  tasks: { total: number; completed: number; inProgress: number; blocked: number };
 }
 
 export interface AdminDashboard {
   role: "ADMIN" | "SUPER_ADMIN";
   organization: { totalEmployees: number; totalDepartments: number; totalTeams: number };
+  team: { totalEmployees: number; present: number; absent: number; updatesPending: number };
+  tasks: { total: number; completed: number; inProgress: number; blocked: number };
 }
 
 export type DashboardPayload = EmployeeDashboard | ManagerDashboard | AdminDashboard;

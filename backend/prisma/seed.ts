@@ -5,9 +5,15 @@ import { ROLE_PERMISSIONS } from "../src/config/permissions";
 
 const prisma = new PrismaClient();
 
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.length < 12) throw new Error(`${name} must be set (min 12 chars) before seeding`);
+  return value;
+}
+
 const env = {
-  superAdminEmail: process.env.SEED_SUPER_ADMIN_EMAIL ?? "admin@tracker.local",
-  superAdminPassword: process.env.SEED_SUPER_ADMIN_PASSWORD ?? "Admin@12345",
+  superAdminEmail: requiredEnv("SEED_SUPER_ADMIN_EMAIL"),
+  superAdminPassword: requiredEnv("SEED_SUPER_ADMIN_PASSWORD"),
   managerEmail: process.env.SEED_MANAGER_EMAIL ?? "manager@tracker.local",
   managerPassword: process.env.SEED_MANAGER_PASSWORD ?? "Manager@12345",
   employeeEmail: process.env.SEED_EMPLOYEE_EMAIL ?? "employee@tracker.local",
@@ -103,59 +109,61 @@ async function main() {
     designation: "Super Administrator",
   });
 
-  console.log("Seeding sample department and team...");
-  const department = await prisma.department.upsert({
-    where: { name: "Technology" },
-    update: {},
-    create: { name: "Technology", description: "Engineering and product teams" },
-  });
+  if (process.env.SEED_DEMO === "true") {
+    console.log("Seeding sample department and team...");
+    const department = await prisma.department.upsert({
+      where: { name: "Technology" },
+      update: {},
+      create: { name: "Technology", description: "Engineering and product teams" },
+    });
 
-  const team = await prisma.team.upsert({
-    where: { departmentId_name: { departmentId: department.id, name: "Team A" } },
-    update: {},
-    create: { name: "Team A", departmentId: department.id },
-  });
+    const team = await prisma.team.upsert({
+      where: { departmentId_name: { departmentId: department.id, name: "Team A" } },
+      update: {},
+      create: { name: "Team A", departmentId: department.id },
+    });
 
-  console.log("Seeding manager...");
-  const managerUser = await ensureUserWithEmployee({
-    email: env.managerEmail,
-    password: env.managerPassword,
-    roleId: rolesByName.get("MANAGER")!,
-    fullName: "Sample Manager",
-    employeeCode: "EMP-0002",
-    designation: "Engineering Manager",
-    departmentId: department.id,
-    teamId: team.id,
-  });
+    console.log("Seeding manager...");
+    const managerUser = await ensureUserWithEmployee({
+      email: env.managerEmail,
+      password: env.managerPassword,
+      roleId: rolesByName.get("MANAGER")!,
+      fullName: "Sample Manager",
+      employeeCode: "EMP-0002",
+      designation: "Engineering Manager",
+      departmentId: department.id,
+      teamId: team.id,
+    });
 
-  const managerEmployee = await prisma.employee.findUnique({ where: { userId: managerUser.id } });
-  if (managerEmployee) {
-    await prisma.team.update({ where: { id: team.id }, data: { managerId: managerEmployee.id } });
-  }
-
-  console.log("Seeding employee...");
-  const employeeUser = await ensureUserWithEmployee({
-    email: env.employeeEmail,
-    password: env.employeePassword,
-    roleId: rolesByName.get("EMPLOYEE")!,
-    fullName: "Sample Employee",
-    employeeCode: "EMP-0003",
-    designation: "Software Engineer",
-    departmentId: department.id,
-    teamId: team.id,
-  });
-
-  if (managerEmployee) {
-    const employeeRecord = await prisma.employee.findUnique({ where: { userId: employeeUser.id } });
-    if (employeeRecord) {
-      await prisma.employee.update({ where: { id: employeeRecord.id }, data: { managerId: managerEmployee.id } });
+    const managerEmployee = await prisma.employee.findUnique({ where: { userId: managerUser.id } });
+    if (managerEmployee) {
+      await prisma.team.update({ where: { id: team.id }, data: { managerId: managerEmployee.id } });
     }
+
+    console.log("Seeding employee...");
+    const employeeUser = await ensureUserWithEmployee({
+      email: env.employeeEmail,
+      password: env.employeePassword,
+      roleId: rolesByName.get("EMPLOYEE")!,
+      fullName: "Sample Employee",
+      employeeCode: "EMP-0003",
+      designation: "Software Engineer",
+      departmentId: department.id,
+      teamId: team.id,
+    });
+
+    if (managerEmployee) {
+      const employeeRecord = await prisma.employee.findUnique({ where: { userId: employeeUser.id } });
+      if (employeeRecord) {
+        await prisma.employee.update({ where: { id: employeeRecord.id }, data: { managerId: managerEmployee.id } });
+      }
+    }
+
   }
 
   console.log("Seed complete.");
-  console.log(`  Super admin: ${env.superAdminEmail} / ${env.superAdminPassword}`);
-  console.log(`  Manager:     ${env.managerEmail} / ${env.managerPassword}`);
-  console.log(`  Employee:    ${env.employeeEmail} / ${env.employeePassword}`);
+  console.log(`  Super admin: ${env.superAdminEmail}`);
+  if (process.env.SEED_DEMO === "true") console.log("  Demo data created (SEED_DEMO=true).");
 }
 
 main()

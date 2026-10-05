@@ -9,6 +9,9 @@ import { departmentsRouter } from "./modules/departments/departments.routes";
 import { teamsRouter } from "./modules/teams/teams.routes";
 import { employeesRouter } from "./modules/employees/employees.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
+import { attendanceRouter } from "./modules/attendance/attendance.routes";
+import { tasksRouter } from "./modules/tasks/tasks.routes";
+import { dailyUpdatesRouter } from "./modules/daily-updates/daily-updates.routes";
 
 export const app = express();
 
@@ -24,6 +27,9 @@ app.use("/api/v1/departments", departmentsRouter);
 app.use("/api/v1/teams", teamsRouter);
 app.use("/api/v1/employees", employeesRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+app.use("/api/v1/attendance", attendanceRouter);
+app.use("/api/v1/tasks", tasksRouter);
+app.use("/api/v1/daily-updates", dailyUpdatesRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -9,11 +9,16 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { SkeletonBlock } from "../components/Skeleton";
 import { ErrorState } from "../components/ErrorState";
 import { AnimatedEntrance } from "../components/AnimatedEntrance";
+import { Ionicons } from "@expo/vector-icons";
+import { AttendanceCard } from "../components/AttendanceCard";
+import { Card } from "../components/Card";
+import { PerformanceDials } from "../components/PerformanceDials";
 import { colors } from "../theme/colors";
-import { spacing } from "../theme/spacing";
+import { radius, shadow, spacing } from "../theme/spacing";
 import { fontFamily, typography } from "../theme/typography";
 import { getErrorMessage } from "../utils/errorMessage";
 import { DashboardPayload } from "../types";
+
 
 export function DashboardScreen() {
   const { user } = useAuth();
@@ -22,11 +27,14 @@ export function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [loadCount, setLoadCount] = useState(0);
+
   const load = useCallback(async () => {
     try {
       setError(null);
       const payload = await fetchMyDashboard();
       setData(payload);
+      setLoadCount((n) => n + 1);
     } catch (err) {
       setError(getErrorMessage(err, "We couldn't load your dashboard."));
     }
@@ -84,8 +92,25 @@ export function DashboardScreen() {
         icon="stats-chart-outline"
       />
 
+      <View style={styles.hero}>
+        <View style={styles.heroTextColumn}>
+          <Text style={styles.heroLabel}>{data.role.replace(/_/g, " ")}</Text>
+          <Text style={styles.heroTitle}>
+            {data.role === "EMPLOYEE"
+              ? `${data.tasks.inProgress} task${data.tasks.inProgress === 1 ? "" : "s"} in progress`
+              : data.role === "MANAGER"
+                ? `${data.team.updatesPending} update${data.team.updatesPending === 1 ? "" : "s"} pending review`
+                : `${data.organization.totalEmployees} people across ${data.organization.totalTeams} teams`}
+          </Text>
+        </View>
+        <View style={styles.heroIcon}>
+          <Ionicons name="sparkles-outline" size={22} color={colors.white} />
+        </View>
+      </View>
+
       {data.role === "EMPLOYEE" && (
         <>
+          <AttendanceCard onChanged={load} refreshKey={loadCount} />
           <Text style={styles.sectionTitle}>Today</Text>
           <View style={styles.kpiGrid}>
             <AnimatedEntrance index={0} style={styles.kpiItem}>
@@ -145,11 +170,27 @@ export function DashboardScreen() {
             <AnimatedEntrance index={2} style={styles.kpiItem}>
               <KpiCard icon="close-circle-outline" label="Absent" value={data.team.absent} tone="danger" />
             </AnimatedEntrance>
-            <AnimatedEntrance index={3} style={styles.kpiItem}>
-              <KpiCard icon="airplane-outline" label="On Leave" value={data.team.onLeave} tone="warning" />
-            </AnimatedEntrance>
             <AnimatedEntrance index={4} style={styles.kpiItem}>
               <KpiCard icon="alert-circle-outline" label="Updates Pending" value={data.team.updatesPending} tone="warning" />
+            </AnimatedEntrance>
+          </View>
+
+          <Text style={styles.sectionTitle}>Team performance</Text>
+          <PerformanceDials team={data.team} tasks={data.tasks} />
+
+          <Text style={styles.sectionTitle}>Team tasks</Text>
+          <View style={styles.kpiGrid}>
+            <AnimatedEntrance index={0} style={styles.kpiItem}>
+              <KpiCard icon="list-outline" label="Total" value={data.tasks.total} />
+            </AnimatedEntrance>
+            <AnimatedEntrance index={1} style={styles.kpiItem}>
+              <KpiCard icon="checkmark-done-outline" label="Completed" value={data.tasks.completed} tone="success" />
+            </AnimatedEntrance>
+            <AnimatedEntrance index={2} style={styles.kpiItem}>
+              <KpiCard icon="sync-outline" label="In Progress" value={data.tasks.inProgress} tone="warning" />
+            </AnimatedEntrance>
+            <AnimatedEntrance index={3} style={styles.kpiItem}>
+              <KpiCard icon="ban-outline" label="Blocked" value={data.tasks.blocked} tone="danger" />
             </AnimatedEntrance>
           </View>
 
@@ -159,7 +200,6 @@ export function DashboardScreen() {
             data={[
               { label: "Present", value: data.team.present, color: colors.success },
               { label: "Absent", value: data.team.absent, color: colors.danger },
-              { label: "On Leave", value: data.team.onLeave, color: colors.warning },
             ]}
           />
         </>
@@ -180,6 +220,9 @@ export function DashboardScreen() {
             </AnimatedEntrance>
           </View>
 
+          <Text style={styles.sectionTitle}>Performance</Text>
+          <PerformanceDials team={data.team} tasks={data.tasks} />
+
           <Text style={styles.sectionTitle}>Analytics</Text>
           <BarChart
             title="Organization Composition"
@@ -192,11 +235,6 @@ export function DashboardScreen() {
         </>
       )}
 
-      <View style={styles.footnote}>
-        <Text style={styles.footnoteText}>
-          Attendance, tasks, and daily updates will populate here starting Phase 2.
-        </Text>
-      </View>
       </ScrollView>
     </Screen>
   );
@@ -205,6 +243,48 @@ export function DashboardScreen() {
 const styles = StyleSheet.create({
   content: {
     padding: spacing.lg,
+  },
+  dialCard: {
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  dialRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  hero: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    ...shadow.elevation2,
+  },
+  heroTextColumn: {
+    flex: 1,
+  },
+  heroLabel: {
+    fontFamily: fontFamily.semibold,
+    fontSize: 11,
+    color: colors.primaryLight,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  heroTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 18,
+    color: colors.white,
+    marginTop: spacing.xs,
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: spacing.md,
   },
   sectionTitle: {
     ...typography.overline,

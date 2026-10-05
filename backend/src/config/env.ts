@@ -24,7 +24,7 @@ export const env = {
 
   seed: {
     superAdminEmail: process.env.SEED_SUPER_ADMIN_EMAIL ?? "admin@tracker.local",
-    superAdminPassword: process.env.SEED_SUPER_ADMIN_PASSWORD ?? "Admin@12345",
+    superAdminPassword: process.env.SEED_SUPER_ADMIN_PASSWORD ?? "",
     managerEmail: process.env.SEED_MANAGER_EMAIL ?? "manager@tracker.local",
     managerPassword: process.env.SEED_MANAGER_PASSWORD ?? "Manager@12345",
     employeeEmail: process.env.SEED_EMPLOYEE_EMAIL ?? "employee@tracker.local",
